@@ -3,8 +3,10 @@ import * as STE from "fp-ts-contrib/lib/StateTaskEither";
 import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as Record from "fp-ts/lib/Record";
-import { pipe } from "fp-ts/lib/pipeable";
+import { Do } from "fp-ts-contrib/lib/Do";
+import { IO } from "fp-ts/lib/IO";
 
+const doSTE = Do(STE.stateTaskEitherSeq);
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
@@ -27,32 +29,40 @@ const question = (q: string) =>
     )
   );
 
-function loop(questions: string[]): STE.StateTaskEither<Answers, never, string> {
+const clear = STE.fromTaskEither<Answers, Fail, void>(
+  TE.taskEither.fromIO(() => {
+    console.clear();
+  })
+);
+
+function loop(
+  questions: string[]
+): STE.StateTaskEither<Answers, never, string> {
   if (questions.length === 0) {
     return STE.stateTaskEither.of("Finished!");
   }
 
   const [q, ...rest] = questions;
 
-  const handleAnswer = (answer: string) =>
-    pipe(
-      STE.get<Answers>(),
-      STE.chain(state =>
-        !!state[answer]
-          ? loop(questions)
-          : pipe(
-              //modify returns void in the A slot
-              //resulting in State<Answers, void>
-              STE.modify<Answers>(Record.insertAt<string, boolean>(answer, true)),
-              //so we chain back to the answer from earlier 
-              //resulting in State<Answers, Answer>
-              STE.chain(() => STE.stateTaskEither.of(answer))
+  return doSTE
+    .bindL("clear", () => clear)
+    .bindL("answer", () => question(q))
+    .bindL("state", () => STE.get<Answers>())
+    .bindL("result", d =>
+      !!d.state[d.answer]
+        ? loop(questions)
+        : doSTE
+            .bind(
+              "update",
+              STE.modify<Answers>(
+                Record.insertAt<string, boolean>(d.answer, true)
+              )
             )
-      ),
-      STE.chain(() => loop(rest))
-    );
-
-  return pipe(question(q), STE.chain(handleAnswer));
+            .return(_ => d.answer)
+    )
+    .bindL("next", d => loop(rest))
+    .bindL("clear2", ()=> clear)
+    .return(d => d.next);
 }
 
 function main() {
