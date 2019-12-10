@@ -1,0 +1,16 @@
+{
+  "name": "state-readline",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Max Willmott <max.willmott@skipthedishes.ca>",
+  "license": "MIT",
+  "dependencies": {
+    "fp-ts": "^2.2.0",
+    "fp-ts-contrib": "^0.1.8"
+  },
+  "devDependencies": {
+    "@types/node": "^12.12.16",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
+  }
+}
