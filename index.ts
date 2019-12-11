@@ -4,7 +4,6 @@ import * as TE from "fp-ts/lib/TaskEither";
 import * as E from "fp-ts/lib/Either";
 import * as Record from "fp-ts/lib/Record";
 import { Do } from "fp-ts-contrib/lib/Do";
-import { IO } from "fp-ts/lib/IO";
 
 const doSTE = Do(STE.stateTaskEitherSeq);
 const rl = readline.createInterface({
